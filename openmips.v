@@ -58,6 +58,9 @@ module openmips(
     wire[`RegBus]      reg2_data;
     wire[`RegAddrBus]  reg1_addr;
     wire[`RegAddrBus]  reg2_addr;
+
+    wire[`RegBus] 	hi;
+    wire[`RegBus]   lo;
         
     /**
      * @name pc_reg实例化，取址阶段
@@ -217,11 +220,23 @@ module openmips(
         .reg2_i(ex_reg2_i),
         .wd_i(ex_wd_i),
         .wreg_i(ex_wreg_i),
+        .hi_i(hi),
+		.lo_i(lo),
+
+        .wb_hi_i(wb_hi_i),
+        .wb_lo_i(wb_lo_i),
+        .wb_whilo_i(wb_whilo_i),
+        .mem_hi_i(mem_hi_o),
+        .mem_lo_i(mem_lo_o),
+        .mem_whilo_i(mem_whilo_o),
 
         //输出到EX/MEM模块的信息
         .wd_o(ex_wd_o),
         .wreg_o(ex_wreg_o),
-        .wdata_o(ex_wdata_o)
+        .wdata_o(ex_wdata_o),
+        .hi_o(ex_hi_o),
+		.lo_o(ex_lo_o),
+		.whilo_o(ex_whilo_o)
     );
     
        // EX/MEM模块例化
@@ -234,10 +249,17 @@ module openmips(
         .ex_wreg(ex_wreg_o),
         .ex_wdata(ex_wdata_o),
 
+        .ex_hi(ex_hi_o),
+		.ex_lo(ex_lo_o),
+		.ex_whilo(ex_whilo_o),
+
         // 送到访存阶段MEM模块的信息
         .mem_wd(mem_wd_i),
         .mem_wreg(mem_wreg_i),
-        .mem_wdata(mem_wdata_i)
+        .mem_wdata(mem_wdata_i),
+        .mem_hi(mem_hi_i),
+		.mem_lo(mem_lo_i),
+		.mem_whilo(mem_whilo_i)
     );
     
     // MEM模块例化
@@ -248,11 +270,17 @@ module openmips(
         .wd_i(mem_wd_i),
         .wreg_i(mem_wreg_i),
         .wdata_i(mem_wdata_i),
+        .hi_i(mem_hi_i),
+		.lo_i(mem_lo_i),
+		.whilo_i(mem_whilo_i),
 
         // 送到MEM/WB模块的信息
         .wd_o(mem_wd_o),
         .wreg_o(mem_wreg_o),
-        .wdata_o(mem_wdata_o)
+        .wdata_o(mem_wdata_o),
+        .hi_o(mem_hi_o),
+		.lo_o(mem_lo_o),
+		.whilo_o(mem_whilo_o)
     );
     
        // MEM/WB模块例化
@@ -263,11 +291,30 @@ module openmips(
         .mem_wd(mem_wd_o),
         .mem_wreg(mem_wreg_o),
         .mem_wdata(mem_wdata_o),
+        .mem_hi(mem_hi_o),
+		.mem_lo(mem_lo_o),
+		.mem_whilo(mem_whilo_o),
 
         // 送到回写阶段的信息
         .wb_wd(wb_wd_i),
         .wb_wreg(wb_wreg_i),
-        .wb_wdata(wb_wdata_i)
+        .wb_wdata(wb_wdata_i),
+        .wb_hi(wb_hi_i),
+		.wb_lo(wb_lo_i),
+		.wb_whilo(wb_whilo_i)
     );
+
+    hilo_reg hilo_reg0(
+		.clk(clk),
+		.rst(rst),
+	
+		.we(wb_whilo_i),
+		.hi_i(wb_hi_i),
+		.lo_i(wb_lo_i),
+	
+
+		.hi_o(hi),
+		.lo_o(lo)
+	);
     
 endmodule

@@ -28,8 +28,10 @@ module id(
     output reg[`RegBus] reg2_o,
     output reg[`RegAddrBus] wd_o,
     output reg wreg_o,
-    output wire                   stallreq
+    output wire stallreq
 );
+
+assign stallreq = `NoStop;
 
 // 取出指令码，功能码，高6位是指令码
 

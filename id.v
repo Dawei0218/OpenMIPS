@@ -8,14 +8,14 @@ module id(
     input wire[`RegBus] reg2_data_i,
 
   //处于执行阶段的指令的运算结果 
-    input wire                ex_wreg_i, 
-    input wire[`RegBus]       ex_wdata_i, 
-    input wire[`RegAddrBus]   ex_wd_i, 
+    input wire ex_wreg_i,
+    input wire[`RegBus] ex_wdata_i,
+    input wire[`RegAddrBus] ex_wd_i,
      
     //处于访存阶段的指令的运算结果 
-    input wire                mem_wreg_i, 
-    input wire[`RegBus]       mem_wdata_i, 
-    input wire[`RegAddrBus]   mem_wd_i, 
+    input wire mem_wreg_i,
+    input wire[`RegBus] mem_wdata_i,
+    input wire[`RegAddrBus] mem_wd_i,
 
     output reg reg1_read_o,
     output reg reg2_read_o,

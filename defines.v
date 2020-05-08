@@ -109,3 +109,5 @@
 `define RegNumLog2           5                  //寻址通用寄存器使用的地址位数
 `define NOPRegAddr           5'b00000
 
+`define Stop                 1'b1               // 流水线暂停 
+`define NoStop               1'b0               // 流水线继续 

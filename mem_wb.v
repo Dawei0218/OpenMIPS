@@ -13,6 +13,8 @@ module mem_wb(
     input wire[`RegBus] mem_lo,
     input wire mem_whilo,
 
+    input wire[5:0] stall,
+
     // 送到回写阶段的信息
     output reg[`RegAddrBus] wb_wd,
     output reg wb_wreg,
@@ -33,7 +35,16 @@ module mem_wb(
                     wb_lo <= `ZeroWord;
                     wb_whilo <= `WriteDisable;
                 end
-            else
+            else if(stall[4] == `Stop && stall[5] == `NoStop)
+                begin
+                    wb_wd    <= `NOPRegAddr; 
+                    wb_wreg  <= `WriteDisable;
+                    wb_wdata <= `ZeroWord;
+                    wb_hi    <= `ZeroWord;
+                    wb_lo    <= `ZeroWord;
+                    wb_whilo <= `WriteDisable;
+                end
+            else if(stall[4] == `NoStop)
                 begin
                     wb_wd    <= mem_wd;
                     wb_wreg  <= mem_wreg;

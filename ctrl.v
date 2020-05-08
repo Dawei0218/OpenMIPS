@@ -1,3 +1,4 @@
+`include "defines.v"
 module ctrl(
     input wire rst, 
     input wire stallreq_from_id,    // 来自译码阶段的暂停请求 

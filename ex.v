@@ -21,13 +21,21 @@ module ex(
     input wire[`RegBus] mem_lo_i,
     input wire mem_whilo_i,
     
+    input wire[`DoubleRegBus] hilo_temp_i,
+    input wire[1:0] cnt_i,
+
     output reg[`RegBus] hi_o,
     output reg[`RegBus] lo_o,
     output reg whilo_o,
 
 	output reg[`RegAddrBus] wd_o,
 	output reg wreg_o,
-	output reg[`RegBus] wdata_o
+	output reg[`RegBus] wdata_o,
+
+    output reg[`DoubleRegBus] hilo_temp_o, 
+    output reg[1:0] cnt_o, 
+ 
+    output reg stallreq 
 );
 
 	reg[`RegBus] logicout;
@@ -47,6 +55,8 @@ module ex(
     wire[`RegBus] opdata2_mult;     // 乘法操作中的乘数 
     wire[`DoubleRegBus] hilo_temp; // 临时保存乘法结果，宽度为64位 
     reg[`DoubleRegBus] mulres;      // 保存乘法结果，宽度为64位 
+    reg[`DoubleRegBus] hilo_temp1;
+	reg stallreq_for_madd_msub;
 
     assign reg2_i_mux = ((aluop_i == `EXE_SUB_OP) || (aluop_i == `EXE_SUBU_OP) || (aluop_i == `EXE_SLT_OP)) ? (~reg2_i)+1 : reg2_i; 
     assign result_sum = reg1_i + reg2_i_mux; 
@@ -115,15 +125,14 @@ module ex(
 	    end
 
      //（1）取得乘法运算的被乘数，如果是有符号乘法且被乘数是负数，那么取补码 
-    assign opdata1_mult=(((aluop_i==`EXE_MUL_OP)||(aluop_i==`EXE_MULT_OP)) 
-                            && (reg1_i[31] == 1'b1)) ? (~reg1_i + 1) : reg1_i; 
- 
-    //（2）取得乘法运算的乘数，如果是有符号乘法且乘数是负数，那么取补码 
-    assign opdata2_mult=(((aluop_i==`EXE_MUL_OP)||(aluop_i==`EXE_MULT_OP)) 
-                            && (reg2_i[31] == 1'b1)) ? (~reg2_i + 1) : reg2_i; 
- 
-    //（3）得到临时乘法结果，保存在变量hilo_temp中 
-    assign hilo_temp = opdata1_mult * opdata2_mult; 
+    assign opdata1_mult = (((aluop_i == `EXE_MUL_OP) || (aluop_i == `EXE_MULT_OP) ||
+    (aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MSUB_OP)) && (reg1_i[31] == 1'b1)) ? (~reg1_i + 1) : reg1_i;
+
+    assign opdata2_mult = (((aluop_i == `EXE_MUL_OP) || (aluop_i == `EXE_MULT_OP) ||
+													(aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MSUB_OP))
+													&& (reg2_i[31] == 1'b1)) ? (~reg2_i + 1) : reg2_i;	
+
+    assign hilo_temp = opdata1_mult * opdata2_mult;
 
 
     //（4）对临时乘法结果进行修正，最终的乘法结果保存在变量mulres中，主要有两点： 
@@ -177,6 +186,53 @@ module ex(
                     {HI,LO} <= {hi_i,lo_i}; 
                 end 
         end
+
+        always @ (*) begin
+            stallreq = stallreq_for_madd_msub;
+        end
+
+
+	always @ (*) begin
+		if(rst == `RstEnable) begin
+			hilo_temp_o <= {`ZeroWord,`ZeroWord};
+			cnt_o <= 2'b00;
+			stallreq_for_madd_msub <= `NoStop;
+		end else begin
+			
+			case (aluop_i) 
+				`EXE_MADD_OP, `EXE_MADDU_OP:		begin
+					if(cnt_i == 2'b00) begin
+						hilo_temp_o <= mulres;
+						cnt_o <= 2'b01;
+						stallreq_for_madd_msub <= `Stop;
+						hilo_temp1 <= {`ZeroWord,`ZeroWord};
+					end else if(cnt_i == 2'b01) begin
+						hilo_temp_o <= {`ZeroWord,`ZeroWord};						
+						cnt_o <= 2'b10;
+						hilo_temp1 <= hilo_temp_i + {HI,LO};
+						stallreq_for_madd_msub <= `NoStop;
+					end
+				end
+				`EXE_MSUB_OP, `EXE_MSUBU_OP:		begin
+					if(cnt_i == 2'b00) begin
+						hilo_temp_o <=  ~mulres + 1 ;
+						cnt_o <= 2'b01;
+						stallreq_for_madd_msub <= `Stop;
+					end else if(cnt_i == 2'b01)begin
+						hilo_temp_o <= {`ZeroWord,`ZeroWord};						
+						cnt_o <= 2'b10;
+						hilo_temp1 <= hilo_temp_i + {HI,LO};
+						stallreq_for_madd_msub <= `NoStop;
+					end				
+				end
+				default:	begin
+					hilo_temp_o <= {`ZeroWord,`ZeroWord};
+					cnt_o <= 2'b00;
+					stallreq_for_madd_msub <= `NoStop;				
+				end
+			endcase
+		end
+	end	
 
     always @ (*)
         begin
@@ -315,36 +371,48 @@ module ex(
 
     always @ (*)
         begin
-            if(rst == `RstEnable)
+		    if(rst == `RstEnable)
                 begin
                     whilo_o <= `WriteDisable;
-                    hi_o    <= `ZeroWord;
-                    lo_o    <= `ZeroWord;
-                end
+                    hi_o <= `ZeroWord;
+                    lo_o <= `ZeroWord;		
+		        end
             else if((aluop_i == `EXE_MULT_OP) || (aluop_i == `EXE_MULTU_OP))
-                begin  //mult、multu指令 
-                    whilo_o <= `WriteEnable; 
-                    hi_o <= mulres[63:32]; 
-                    lo_o <= mulres[31:0];    
-                end
+                begin
+                    whilo_o <= `WriteEnable;
+                    hi_o <= mulres[63:32];
+                    lo_o <= mulres[31:0];			
+		        end
+            else if((aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MADDU_OP))
+                begin
+                    whilo_o <= `WriteEnable;
+                    hi_o <= hilo_temp1[63:32];
+                    lo_o <= hilo_temp1[31:0];
+		        end
+            else if((aluop_i == `EXE_MSUB_OP) || (aluop_i == `EXE_MSUBU_OP))
+                begin
+                    whilo_o <= `WriteEnable;
+                    hi_o <= hilo_temp1[63:32];
+                    lo_o <= hilo_temp1[31:0];			
+		        end
             else if(aluop_i == `EXE_MTHI_OP)
                 begin
                     whilo_o <= `WriteEnable;
-                    hi_o    <= reg1_i;
-                    lo_o    <= LO; // 写HI寄存器，所以LO保持不变 
-                end
+                    hi_o <= reg1_i;
+                    lo_o <= LO;
+		        end
             else if(aluop_i == `EXE_MTLO_OP)
                 begin
                     whilo_o <= `WriteEnable;
-                    hi_o    <= HI; // 写LO寄存器，所以HI保持不变 
-                    lo_o    <= reg1_i;
-                end
+                    hi_o <= HI;
+                    lo_o <= reg1_i;
+		        end
             else
-                begin 
+                begin
                     whilo_o <= `WriteDisable;
-                    hi_o    <= `ZeroWord;
-                    lo_o    <= `ZeroWord;
-                end 
-        end 
+                    hi_o <= `ZeroWord;
+                    lo_o <= `ZeroWord;
+		        end
+	end
 
 endmodule

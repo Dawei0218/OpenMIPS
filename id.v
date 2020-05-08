@@ -27,7 +27,8 @@ module id(
     output reg[`RegBus] reg1_o,
     output reg[`RegBus] reg2_o,
     output reg[`RegAddrBus] wd_o,
-    output reg wreg_o
+    output reg wreg_o,
+    output wire                   stallreq
 );
 
 // 取出指令码，功能码，高6位是指令码
@@ -154,9 +155,9 @@ begin
 								            end
                                         `EXE_MFHI:
                                             begin                  // mfhi指令
-                                                wreg_o      <= `WriteEnable;
-                                                aluop_o     <= `EXE_MFHI_OP;
-                                                alusel_o    <= `EXE_RES_MOVE;
+                                                wreg_o <= `WriteEnable;
+                                                aluop_o <= `EXE_MFHI_OP;
+                                                alusel_o <= `EXE_RES_MOVE;
                                                 reg1_read_o <= 1'b0;
                                                 reg2_read_o <= 1'b0;
                                                 instvalid   <= `InstValid;
@@ -427,6 +428,42 @@ begin
                                     reg1_read_o <= 1'b1; 
                                     reg2_read_o <= 1'b1; 
                                     instvalid   <= `InstValid;
+                                end
+                             `EXE_MADD:
+                                begin         // madd指令 
+                                    wreg_o      <= `WriteDisable; 
+                                    aluop_o     <= `EXE_MADD_OP; 
+                                    alusel_o    <= `EXE_RES_MUL;  
+                                    reg1_read_o <= 1'b1; 
+                                    reg2_read_o <= 1'b1; 
+                                    instvalid   <= `InstValid; 
+                                end 
+                            `EXE_MADDU:
+                                begin         // maddu指令 
+                                    wreg_o      <= `WriteDisable;
+                                    aluop_o     <= `EXE_MADDU_OP;
+                                    alusel_o    <= `EXE_RES_MUL;
+                                    reg1_read_o <= 1'b1;
+                                    reg2_read_o <= 1'b1; 
+                                    instvalid   <= `InstValid; 
+                                end 
+                            `EXE_MSUB:
+                                begin         // msub指令 
+                                    wreg_o      <= `WriteDisable; 
+                                    aluop_o     <= `EXE_MSUB_OP; 
+                                    alusel_o    <= `EXE_RES_MUL;  
+                                    reg1_read_o <= 1'b1;  
+                                    reg2_read_o <= 1'b1; 
+                                    instvalid   <= `InstValid; 
+                                end 
+                            `EXE_MSUBU:
+                                begin         // msubu指令 
+                                    wreg_o      <= `WriteDisable; 
+                                    aluop_o     <= `EXE_MSUBU_OP; 
+                                    alusel_o    <= `EXE_RES_MUL;
+                                    reg1_read_o <= 1'b1;  
+                                    reg2_read_o <= 1'b1; 
+                                    instvalid   <= `InstValid;  
                                 end 
                             default:
                                 begin

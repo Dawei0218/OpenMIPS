@@ -178,7 +178,7 @@ module openmips(
         .reg1_o(id_reg1_o),
         .reg2_o(id_reg2_o),
         .wd_o(id_wd_o),
-        .wreg_o(id_wreg_o)
+        .wreg_o(id_wreg_o),
 
         .stallreq(stallreq_from_id)
     );
@@ -256,6 +256,9 @@ module openmips(
         .mem_lo_i(mem_lo_o),
         .mem_whilo_i(mem_whilo_o),
 
+        .hilo_temp_i(hilo_temp_i),
+	    .cnt_i(cnt_i),
+
         //输出到EX/MEM模块的信息
         .wd_o(ex_wd_o),
         .wreg_o(ex_wreg_o),
@@ -294,7 +297,7 @@ module openmips(
         .mem_wdata(mem_wdata_i),
         .mem_hi(mem_hi_i),
 		.mem_lo(mem_lo_i),
-		.mem_whilo(mem_whilo_i)
+		.mem_whilo(mem_whilo_i),
 
         .hilo_o(hilo_temp_i),
 		.cnt_o(cnt_i)

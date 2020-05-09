@@ -24,6 +24,13 @@ module ex(
     input wire[`DoubleRegBus] hilo_temp_i,
     input wire[1:0] cnt_i,
 
+    input wire[`DoubleRegBus] div_result_i, 
+    input wire div_ready_i, 
+
+    output reg[`RegBus] div_opdata1_o, 
+    output reg[`RegBus] div_opdata2_o, 
+    output reg div_start_o, 
+    output reg signed_div_o, 
     output reg[`RegBus] hi_o,
     output reg[`RegBus] lo_o,
     output reg whilo_o,
@@ -57,6 +64,7 @@ module ex(
     reg[`DoubleRegBus] mulres;      // 保存乘法结果，宽度为64位 
     reg[`DoubleRegBus] hilo_temp1;
 	reg stallreq_for_madd_msub;
+    reg stallreq_for_div;
 
     assign reg2_i_mux = ((aluop_i == `EXE_SUB_OP) || (aluop_i == `EXE_SUBU_OP) || (aluop_i == `EXE_SLT_OP)) ? (~reg2_i)+1 : reg2_i; 
     assign result_sum = reg1_i + reg2_i_mux; 
@@ -188,47 +196,121 @@ module ex(
         end
 
         always @ (*) begin
-            stallreq = stallreq_for_madd_msub;
+             stallreq = stallreq_for_madd_msub || stallreq_for_div;
         end
 
 
 	always @ (*) begin
-		if(rst == `RstEnable) begin
-			hilo_temp_o <= {`ZeroWord,`ZeroWord};
-			cnt_o <= 2'b00;
-			stallreq_for_madd_msub <= `NoStop;
-		end else begin
+		if(rst == `RstEnable)
+            begin
+			    hilo_temp_o <= {`ZeroWord,`ZeroWord};
+			    cnt_o <= 2'b00;
+			    stallreq_for_madd_msub <= `NoStop;
+		    end
+        else
+            begin
 			
+                case (aluop_i) 
+                    `EXE_MADD_OP, `EXE_MADDU_OP:
+                        begin
+                            if(cnt_i == 2'b00)
+                                begin
+                                    hilo_temp_o <= mulres;
+                                    cnt_o <= 2'b01;
+                                    stallreq_for_madd_msub <= `Stop;
+                                    hilo_temp1 <= {`ZeroWord,`ZeroWord};
+                                end
+                            else if(cnt_i == 2'b01)
+                                begin
+                                    hilo_temp_o <= {`ZeroWord,`ZeroWord};						
+                                    cnt_o <= 2'b10;
+                                    hilo_temp1 <= hilo_temp_i + {HI,LO};
+                                    stallreq_for_madd_msub <= `NoStop;
+                                end
+                        end
+                    `EXE_MSUB_OP, `EXE_MSUBU_OP:
+                        begin
+                            if(cnt_i == 2'b00)
+                                begin
+                                    hilo_temp_o <=  ~mulres + 1 ;
+                                    cnt_o <= 2'b01;
+                                    stallreq_for_madd_msub <= `Stop;
+                                end
+                            else if(cnt_i == 2'b01)
+                                begin
+                                    hilo_temp_o <= {`ZeroWord,`ZeroWord};						
+                                    cnt_o <= 2'b10;
+                                    hilo_temp1 <= hilo_temp_i + {HI,LO};
+                                    stallreq_for_madd_msub <= `NoStop;
+                                end
+                        end
+                    default:
+                        begin
+                            hilo_temp_o <= {`ZeroWord,`ZeroWord};
+                            cnt_o <= 2'b00;
+                            stallreq_for_madd_msub <= `NoStop;				
+                        end
+                endcase
+		    end
+	end
+
+    always @ (*) begin
+		if(rst == `RstEnable) begin
+			stallreq_for_div <= `NoStop;
+	    div_opdata1_o <= `ZeroWord;
+			div_opdata2_o <= `ZeroWord;
+			div_start_o <= `DivStop;
+			signed_div_o <= 1'b0;
+		end else begin
+			stallreq_for_div <= `NoStop;
+	    div_opdata1_o <= `ZeroWord;
+			div_opdata2_o <= `ZeroWord;
+			div_start_o <= `DivStop;
+			signed_div_o <= 1'b0;	
 			case (aluop_i) 
-				`EXE_MADD_OP, `EXE_MADDU_OP:		begin
-					if(cnt_i == 2'b00) begin
-						hilo_temp_o <= mulres;
-						cnt_o <= 2'b01;
-						stallreq_for_madd_msub <= `Stop;
-						hilo_temp1 <= {`ZeroWord,`ZeroWord};
-					end else if(cnt_i == 2'b01) begin
-						hilo_temp_o <= {`ZeroWord,`ZeroWord};						
-						cnt_o <= 2'b10;
-						hilo_temp1 <= hilo_temp_i + {HI,LO};
-						stallreq_for_madd_msub <= `NoStop;
-					end
+				`EXE_DIV_OP:		begin
+					if(div_ready_i == `DivResultNotReady) begin
+	    			div_opdata1_o <= reg1_i;
+						div_opdata2_o <= reg2_i;
+						div_start_o <= `DivStart;
+						signed_div_o <= 1'b1;
+						stallreq_for_div <= `Stop;
+					end else if(div_ready_i == `DivResultReady) begin
+	    			div_opdata1_o <= reg1_i;
+						div_opdata2_o <= reg2_i;
+						div_start_o <= `DivStop;
+						signed_div_o <= 1'b1;
+						stallreq_for_div <= `NoStop;
+					end else begin						
+	    			div_opdata1_o <= `ZeroWord;
+						div_opdata2_o <= `ZeroWord;
+						div_start_o <= `DivStop;
+						signed_div_o <= 1'b0;
+						stallreq_for_div <= `NoStop;
+					end					
 				end
-				`EXE_MSUB_OP, `EXE_MSUBU_OP:		begin
-					if(cnt_i == 2'b00) begin
-						hilo_temp_o <=  ~mulres + 1 ;
-						cnt_o <= 2'b01;
-						stallreq_for_madd_msub <= `Stop;
-					end else if(cnt_i == 2'b01)begin
-						hilo_temp_o <= {`ZeroWord,`ZeroWord};						
-						cnt_o <= 2'b10;
-						hilo_temp1 <= hilo_temp_i + {HI,LO};
-						stallreq_for_madd_msub <= `NoStop;
-					end				
+				`EXE_DIVU_OP:		begin
+					if(div_ready_i == `DivResultNotReady) begin
+	    			div_opdata1_o <= reg1_i;
+						div_opdata2_o <= reg2_i;
+						div_start_o <= `DivStart;
+						signed_div_o <= 1'b0;
+						stallreq_for_div <= `Stop;
+					end else if(div_ready_i == `DivResultReady) begin
+	    			div_opdata1_o <= reg1_i;
+						div_opdata2_o <= reg2_i;
+						div_start_o <= `DivStop;
+						signed_div_o <= 1'b0;
+						stallreq_for_div <= `NoStop;
+					end else begin						
+	    			div_opdata1_o <= `ZeroWord;
+						div_opdata2_o <= `ZeroWord;
+						div_start_o <= `DivStop;
+						signed_div_o <= 1'b0;
+						stallreq_for_div <= `NoStop;
+					end					
 				end
-				default:	begin
-					hilo_temp_o <= {`ZeroWord,`ZeroWord};
-					cnt_o <= 2'b00;
-					stallreq_for_madd_msub <= `NoStop;				
+				default: begin
 				end
 			endcase
 		end
@@ -383,6 +465,12 @@ module ex(
                     hi_o <= mulres[63:32];
                     lo_o <= mulres[31:0];			
 		        end
+            else if((aluop_i == `EXE_DIV_OP) || (aluop_i == `EXE_DIVU_OP))
+                begin 
+                    whilo_o <= `WriteEnable; 
+                    hi_o    <= div_result_i[63:32]; 
+                    lo_o    <= div_result_i[31:0];  
+                end
             else if((aluop_i == `EXE_MADD_OP) || (aluop_i == `EXE_MADDU_OP))
                 begin
                     whilo_o <= `WriteEnable;

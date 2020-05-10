@@ -25,7 +25,14 @@ module ex(
     input wire[1:0] cnt_i,
 
     input wire[`DoubleRegBus] div_result_i, 
-    input wire div_ready_i, 
+    input wire div_ready_i,
+
+    // 处于执行阶段的转移指令要保存的返回地址
+    input wire[`RegBus] link_address_i,
+ 
+    // 当前执行阶段的指令是否位于延迟槽
+    input wire is_in_delayslot_i,
+
 
     output reg[`RegBus] div_opdata1_o, 
     output reg[`RegBus] div_opdata2_o, 
@@ -438,6 +445,10 @@ module ex(
                     `EXE_RES_ARITHMETIC:
                         begin       //除乘法外的简单算术操作指令
                             wdata_o <= arithmeticres;
+                        end
+                    `EXE_RES_JUMP_BRANCH:
+                        begin
+                            wdata_o <= link_address_i;
                         end
                     `EXE_RES_MUL:
                         begin       //乘法指令mul 

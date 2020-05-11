@@ -21,7 +21,7 @@ module div(
 );
 
     wire[32:0] div_temp;
-    reg[5:0] cnt; //记录试商法进行了几轮，当等于32时，表示试商法结束 
+    reg[5:0] cnt;
     reg[64:0] dividend;
     reg[1:0] state;
     reg[31:0] divisor;

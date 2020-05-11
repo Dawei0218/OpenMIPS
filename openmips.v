@@ -4,9 +4,9 @@ module openmips(
     input wire clk,
     input  wire rst,
 
-    input wire[`RegBus] rom_data_i, // 从指令存储器取得的指令
-    output wire[`RegBus] rom_addr_o, // 输出奥指令存储器的地址
-    output wire rom_ce_o // 使能信号
+    input wire[`RegBus] rom_data_i, //从指令存储器取得的指令
+    output wire[`RegBus] rom_addr_o, //输出奥指令存储器的地址
+    output wire rom_ce_o //使能信号
 );
 
     // 连接IF/ID模块与译码阶段ID模块的变量
@@ -32,10 +32,9 @@ module openmips(
     wire ex_wreg_i;
     wire[`RegAddrBus] ex_wd_i;
     wire ex_is_in_delayslot_i;	
-  wire[`RegBus] ex_link_address_i;
+    wire[`RegBus] ex_link_address_i;
     
     // 连接执行阶段EX模块的输出与EX/MEM模块的输入的变量
-      // 连接执行阶段EX模块的输出与EX/MEM模块的输入的变量
     wire ex_wreg_o;
     wire[`RegAddrBus] ex_wd_o;
     wire[`RegBus] ex_wdata_o;
@@ -99,7 +98,7 @@ module openmips(
 	wire[5:0] stall;
 	wire stallreq_from_id;	
 	wire stallreq_from_ex;
-        
+
     /**
      * @name pc_reg实例化，取址阶段
      * @input rst 复位信号
@@ -112,7 +111,7 @@ module openmips(
         .rst(rst),
         .stall(stall),
         .branch_flag_i(id_branch_flag_o),
-		.branch_target_address_i(branch_target_address),
+        .branch_target_address_i(branch_target_address),
         .pc(pc),
         .ce(rom_ce_o)
     );
@@ -268,7 +267,7 @@ module openmips(
 		.is_in_delayslot_o(is_in_delayslot_i)
     );
  
-       // EX模块例化
+    // EX模块例化
     ex ex0(
         .rst(rst),
 

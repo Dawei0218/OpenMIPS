@@ -26,48 +26,104 @@
 `define ChipDisable 1'b0
 
 
-//ָ��
-`define EXE_AND  6'b100100
-`define EXE_OR   6'b100101
-`define EXE_XOR 6'b100110
-`define EXE_NOR 6'b100111
-`define EXE_ANDI 6'b001100
-`define EXE_ORI  6'b001101
-`define EXE_XORI 6'b001110
-`define EXE_LUI 6'b001111
+// 功能码 或者 指令码
+`define EXE_ORI  6'b001101 // ori 指令码
+`define EXE_SPECIAL_INST 6'b000000 // and or xor nor 指令码
+`define EXE_AND 6'b100100 // and 功能码
+`define EXE_OR 6'b100101 // or 功能码 
+`define EXE_XOR 6'b100110 // xor 功能码
+`define EXE_NOR 6'b100111 // nor 功能码
+`define EXE_ANDI 6'b001100 // andi 指令码
+`define EXE_XORI 6'b001110 // xori 指令码
+`define EXE_LUI 6'b001111 // lui 指令码
+`define EXE_SLL 6'b000000 // ssl  功能码
+`define EXE_SRL  6'b000010 // srl 功能码
+`define EXE_SRA  6'b000011 // sra 功能码
+`define EXE_SLLV  6'b000100 // sllv 功能码
+`define EXE_SRLV  6'b000110 // srlv 功能码
+`define EXE_SRAV  6'b000111 // srav 功能码
+`define EXE_SYNC  6'b001111 // sync 功能码
+`define EXE_PREF  6'b110011 // pref 指令码
+`define EXE_MOVN  6'b001011 // movn 功能码
+`define EXE_MOVZ  6'b001010 // movz 功能码
+`define EXE_MFHI  6'b010000 // mfhi 功能码
+`define EXE_MFLO  6'b010010 // mflo 功能码
+`define EXE_MTHI  6'b010001 // mthi 功能码
+`define EXE_MTLO  6'b010011 // mtlo 功能码
+`define EXE_ADD  6'b100000 // add 功能码
+`define EXE_ADDU  6'b100001 // addu 功能码
+`define EXE_SUB  6'b100010 // sub 功能码
+`define EXE_SUBU  6'b100011 // subu 功能码
+`define EXE_SLT  6'b101010 // slt 功能码
+`define EXE_SLTU  6'b101011 // sltu 功能码
+`define EXE_ADDI  6'b001000 // addi 指令码
+`define EXE_ADDIU  6'b001001 // addu 指令码
+`define EXE_SLTI  6'b001010 // slti 功能码
+`define EXE_SLTIU  6'b001011 // sltiu 功能码
+`define EXE_SPECIAL2_INST 6'b011100 // 通用指令码 clz clo mul
+`define EXE_CLZ  6'b100000  // clz 功能码
+`define EXE_CLO  6'b100001 // clo 功能码
+`define EXE_MUL  6'b000010 // mul 功能码
+`define EXE_MULT  6'b011000 // mult 功能码
+`define EXE_MULTU  6'b011001 // multu
+//AluOp
+`define EXE_NOP_OP 8'b00000000 // 不做处理
+`define EXE_OR_OP    8'b00100101 // 逻辑或操作
+`define EXE_AND_OP   8'b00100100 // 逻辑与操作
+`define EXE_XOR_OP  8'b00100110 // 异或操作
+`define EXE_NOR_OP  8'b00100111 // 或非操作
+`define EXE_SLL_OP  8'b01111100 // 左移操作
+`define EXE_SRL_OP  8'b00000010 // 右移操作
+`define EXE_SRA_OP  8'b00000011 // 右移 最高位填充
+`define EXE_MOVN_OP  8'b00001011 // movn操作
+`define EXE_MOVZ_OP  8'b00001010 // movz操作 和movn操作相同
+`define EXE_MFHI_OP  8'b00010000 // mfhi
+`define EXE_MFLO_OP  8'b00010010 // mflo
+`define EXE_MTHI_OP  8'b00010001  // mthi
+`define EXE_MTLO_OP  8'b00010011 // mtlo
+`define EXE_ADD_OP  8'b00100000 // add 
+`define EXE_ADDU_OP  8'b00100001 // addu操作
+`define EXE_SUB_OP  8'b00100010 // sub
+`define EXE_SUBU_OP  8'b00100011 // subu 
+`define EXE_SLT_OP  8'b00101010 // slt slti
+`define EXE_SLTU_OP  8'b00101011 // sltu sltiu
+`define EXE_ADDI_OP  8'b01010101 // addi
+`define EXE_ADDIU_OP  8'b01010110 // addu
+`define EXE_CLZ_OP  8'b10110000 // clz
+`define EXE_CLO_OP  8'b10110001 // clo
+`define EXE_MUL_OP  8'b10101001 // mul
+`define EXE_MULT_OP  8'b00011000 // mult
+`define EXE_MULTU_OP  8'b00011001 // multu
 
-`define EXE_SLL  6'b000000
-`define EXE_SLLV  6'b000100
-`define EXE_SRL  6'b000010
-`define EXE_SRLV  6'b000110
-`define EXE_SRA  6'b000011
-`define EXE_SRAV  6'b000111
-`define EXE_SYNC  6'b001111
-`define EXE_PREF  6'b110011
+//AluSel
+`define EXE_RES_LOGIC 3'b001 // 逻辑类型
+`define EXE_RES_SHIFT 3'b010 // 位移类型
+`define EXE_RES_MOVE 3'b011 // 移动类型
+`define EXE_RES_ARITHMETIC 3'b100 // 简单运算运算类型
 
-`define EXE_MOVZ  6'b001010
-`define EXE_MOVN  6'b001011
-`define EXE_MFHI  6'b010000
-`define EXE_MTHI  6'b010001
-`define EXE_MFLO  6'b010010
-`define EXE_MTLO  6'b010011
 
-`define EXE_SLT  6'b101010
-`define EXE_SLTU  6'b101011
-`define EXE_SLTI  6'b001010
-`define EXE_SLTIU  6'b001011   
-`define EXE_ADD  6'b100000
-`define EXE_ADDU  6'b100001
-`define EXE_SUB  6'b100010
-`define EXE_SUBU  6'b100011
-`define EXE_ADDI  6'b001000
-`define EXE_ADDIU  6'b001001
-`define EXE_CLZ  6'b100000
-`define EXE_CLO  6'b100001
 
-`define EXE_MULT  6'b011000
-`define EXE_MULTU  6'b011001
-`define EXE_MUL  6'b000010
+
+
+
+
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
 `define EXE_MADD  6'b000000
 `define EXE_MADDU  6'b000001
 `define EXE_MSUB  6'b000100
@@ -104,54 +160,43 @@
 `define EXE_SWL  6'b101010
 `define EXE_SWR  6'b101110
 
-
 `define EXE_NOP 6'b000000
 `define SSNOP 32'b00000000000000000000000001000000
 
-`define EXE_SPECIAL_INST 6'b000000
+
 `define EXE_REGIMM_INST 6'b000001
-`define EXE_SPECIAL2_INST 6'b011100
 
-//AluOp
-`define EXE_AND_OP   8'b00100100
-`define EXE_OR_OP    8'b00100101
-`define EXE_XOR_OP  8'b00100110
-`define EXE_NOR_OP  8'b00100111
-`define EXE_ANDI_OP  8'b01011001
-`define EXE_ORI_OP  8'b01011010
-`define EXE_XORI_OP  8'b01011011
-`define EXE_LUI_OP  8'b01011100   
 
-`define EXE_SLL_OP  8'b01111100
-`define EXE_SLLV_OP  8'b00000100
-`define EXE_SRL_OP  8'b00000010
-`define EXE_SRLV_OP  8'b00000110
-`define EXE_SRA_OP  8'b00000011
-`define EXE_SRAV_OP  8'b00000111
 
-`define EXE_MOVZ_OP  8'b00001010
-`define EXE_MOVN_OP  8'b00001011
-`define EXE_MFHI_OP  8'b00010000
-`define EXE_MTHI_OP  8'b00010001
-`define EXE_MFLO_OP  8'b00010010
-`define EXE_MTLO_OP  8'b00010011
 
-`define EXE_SLT_OP  8'b00101010
-`define EXE_SLTU_OP  8'b00101011
+
+// `define EXE_SLLV_OP  8'b00000100
+// `define EXE_SRLV_OP  8'b00000110
+// `define EXE_SRAV_OP  8'b00000111
+// `define EXE_ANDI_OP  8'b01011001
+// `define EXE_ORI_OP  8'b01011010
+// `define EXE_XORI_OP  8'b01011011
+// `define EXE_LUI_OP  8'b01011100
+
+
+
+
+
+
+
 `define EXE_SLTI_OP  8'b01010111
 `define EXE_SLTIU_OP  8'b01011000   
-`define EXE_ADD_OP  8'b00100000
-`define EXE_ADDU_OP  8'b00100001
-`define EXE_SUB_OP  8'b00100010
-`define EXE_SUBU_OP  8'b00100011
-`define EXE_ADDI_OP  8'b01010101
-`define EXE_ADDIU_OP  8'b01010110
-`define EXE_CLZ_OP  8'b10110000
-`define EXE_CLO_OP  8'b10110001
 
-`define EXE_MULT_OP  8'b00011000
-`define EXE_MULTU_OP  8'b00011001
-`define EXE_MUL_OP  8'b10101001
+
+
+
+
+
+
+
+
+
+
 `define EXE_MADD_OP  8'b10100110
 `define EXE_MADDU_OP  8'b10101000
 `define EXE_MSUB_OP  8'b10101010
@@ -190,13 +235,11 @@
 `define EXE_SWR_OP  8'b11101110
 `define EXE_SYNC_OP  8'b00001111
 
-`define EXE_NOP_OP    8'b00000000
 
-//AluSel
-`define EXE_RES_LOGIC 3'b001
-`define EXE_RES_SHIFT 3'b010
-`define EXE_RES_MOVE 3'b011	
-`define EXE_RES_ARITHMETIC 3'b100	
+
+
+	
+	
 `define EXE_RES_MUL 3'b101
 `define EXE_RES_JUMP_BRANCH 3'b110
 `define EXE_RES_LOAD_STORE 3'b111	

@@ -380,7 +380,7 @@ begin
 					    endcase
 					end									  
 		  	    `EXE_ORI:
-                    begin                        //ORIָ��
+                    begin   // ori指令
                         wreg_o <= `WriteEnable;
                         aluop_o <= `EXE_OR_OP;
                         alusel_o <= `EXE_RES_LOGIC;
@@ -519,7 +519,6 @@ begin
                     begin                      // sltiu指令 
                         wreg_o      <= `WriteEnable; 
                         aluop_o     <= `EXE_SLTU_OP;
-                        aluop_o     <= `EXE_SLTU_OP; 
                         alusel_o    <= `EXE_RES_ARITHMETIC;  
                         reg1_read_o <= 1'b1; 
                         reg2_read_o <= 1'b0; 
@@ -696,7 +695,8 @@ begin
                     begin
 		            end
             endcase		  //case op
-		  
+
+            // 位移操作
             if (inst_i[31:21] == 11'b00000000000)
                 begin
                     if (op3 == `EXE_SLL)
@@ -737,6 +737,7 @@ begin
 		end
 end
 
+// 寄存器1数据赋值
 always @ (*) 
 begin
     if(rst == `RstEnable)
@@ -765,6 +766,7 @@ begin
         end
 end
 
+// 寄存器2数据赋值
 always @ (*)
 begin
     if(rst == `RstEnable)

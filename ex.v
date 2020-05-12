@@ -54,28 +54,30 @@ module ex(
 
 	reg[`RegBus] logicout;
 	reg[`RegBus] shiftres;
-    reg[`RegBus] moveres; // 移动操作的结果
-    reg[`RegBus] HI; // 保存HI寄存器的最新值
-    reg[`RegBus] LO; // 保存LO寄存器的最新值
+    reg[`RegBus] moveres;
+    reg[`RegBus] HI;
+    reg[`RegBus] LO;
 
-    wire ov_sum;           // 保存溢出情况 
-    wire reg1_eq_reg2;     // 第一个操作数是否等于第二个操作数 
-    wire reg1_lt_reg2;     // 第一个操作数是否小于第二个操作数 
-    reg[`RegBus] arithmeticres;    // 保存算术运算的结果 
-    wire[`RegBus] reg2_i_mux;       // 保存输入的第二个操作数reg2_i的补码 
-    wire[`RegBus] reg1_i_not;       // 保存输入的第一个操作数reg1_i取反后的值 
-    wire[`RegBus] result_sum;       // 保存加法结果 
-    wire[`RegBus] opdata1_mult;     // 乘法操作中的被乘数 
-    wire[`RegBus] opdata2_mult;     // 乘法操作中的乘数 
-    wire[`DoubleRegBus] hilo_temp; // 临时保存乘法结果，宽度为64位 
-    reg[`DoubleRegBus] mulres;      // 保存乘法结果，宽度为64位 
+    wire ov_sum; // 溢出检查
+    wire reg1_eq_reg2;
+    wire reg1_lt_reg2; // 操作数1是否小于操作数2
+    reg[`RegBus] arithmeticres;
+    wire[`RegBus] reg2_i_mux;
+    wire[`RegBus] reg1_i_not;
+    wire[`RegBus] result_sum;
+    wire[`RegBus] opdata1_mult;
+    wire[`RegBus] opdata2_mult;
+    wire[`DoubleRegBus] hilo_temp;
+    reg[`DoubleRegBus] mulres;
     reg[`DoubleRegBus] hilo_temp1;
 	reg stallreq_for_madd_msub;
     reg stallreq_for_div;
 
     assign reg2_i_mux = ((aluop_i == `EXE_SUB_OP) || (aluop_i == `EXE_SUBU_OP) || (aluop_i == `EXE_SLT_OP)) ? (~reg2_i)+1 : reg2_i; 
-    assign result_sum = reg1_i + reg2_i_mux; 
+    assign result_sum = reg1_i + reg2_i_mux;
+    // 溢出检查
     assign ov_sum = ((!reg1_i[31] && !reg2_i_mux[31]) && result_sum[31]) || ((reg1_i[31] && reg2_i_mux[31]) && (!result_sum[31])); 
+    
     assign reg1_lt_reg2 = ((aluop_i == `EXE_SLT_OP)) ? ((reg1_i[31] && !reg2_i[31]) || (!reg1_i[31] && !reg2_i[31] && result_sum[31])||
                              (reg1_i[31] && reg2_i[31] && result_sum[31]))
                              :(reg1_i < reg2_i);
@@ -149,15 +151,7 @@ module ex(
 
     assign hilo_temp = opdata1_mult * opdata2_mult;
 
-
-    //（4）对临时乘法结果进行修正，最终的乘法结果保存在变量mulres中，主要有两点： 
-    //    A．如果是有符号乘法指令mult、mul，那么需要修正临时乘法结果，如下： 
-    //       A1．如果被乘数与乘数两者一正一负，那么需要对临时乘法结果 
-    //          hilo_temp求补码，作为最终的乘法结果，赋给变量mulres。 
-    //       A2．如果被乘数与乘数同号，那么hilo_temp的值就作为最终的 
-    //          乘法结果，赋给变量mulres。 
-    //    B．如果是无符号乘法指令multu，那么hilo_temp的值就作为最终的乘法结果, 
-    //       赋给变量mulres 
+    // 处理乘法
     always @ (*)
         begin
 		    if(rst == `RstEnable)
@@ -181,7 +175,7 @@ module ex(
 		        end
 	    end
 
-
+    // 吧要写入的值保存到HI LO字段里，方面下次使用
     always @ (*)
         begin
             if(rst == `RstEnable)
@@ -202,9 +196,9 @@ module ex(
                 end 
         end
 
-        always @ (*) begin
-             stallreq = stallreq_for_madd_msub || stallreq_for_div;
-        end
+    always @ (*) begin
+         stallreq = stallreq_for_madd_msub || stallreq_for_div;
+    end
 
 
 	always @ (*) begin
@@ -323,6 +317,7 @@ module ex(
 		end
 	end	
 
+    // 移动操作
     always @ (*)
         begin
             if(rst == `RstEnable)
@@ -355,6 +350,7 @@ module ex(
                 end
         end
 
+    // 逻辑操作
 	always @ (*)
         begin
 		    if(rst == `RstEnable)
@@ -374,7 +370,7 @@ module ex(
 				            end
 				        `EXE_NOR_OP:
                             begin
-					            logicout <= ~(reg1_i |reg2_i);
+					            logicout <= ~(reg1_i | reg2_i);
 				            end
 				        `EXE_XOR_OP:
                             begin
@@ -388,6 +384,7 @@ module ex(
 		        end
 	    end
 
+    // 位移操作
 	always @ (*)
         begin
             if(rst == `RstEnable)
@@ -461,7 +458,7 @@ module ex(
                 endcase
         end
 
-
+    // 写入hi lo寄存器
     always @ (*)
         begin
 		    if(rst == `RstEnable)
